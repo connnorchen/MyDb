@@ -36,6 +36,8 @@ type BTree struct {
     get func(uint64) BNode // dereference a pointer
     new func(BNode) uint64 // allocate a new page
     del func(uint64)       // deallocate a new page
+
+    mockNodeList []BNode   // for testing usage
 }
 
 func init() { 
