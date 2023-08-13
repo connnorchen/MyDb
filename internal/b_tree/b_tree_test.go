@@ -6,6 +6,33 @@ import (
      "github.com/stretchr/testify/assert"
 )
 
+func SetUpMockBTree(t *testing.T, tree *BTree) {
+    // root = intermediate node with 0 as the key
+    tree.root = 0
+    root := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    root.setHeader(BNODE_NODE, 1)
+    nodeAppendKV(root, 0, 1, []byte{byte(0)}, nil)
+
+    // child0 = default leaf node
+    child0 := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    child0.setHeader(BNODE_LEAF, 1)
+    nodeAppendKV(child0, 0, 0, []byte{byte(0)}, nil)
+
+    tree.mockNodeList = append(tree.mockNodeList, root)
+    tree.mockNodeList = append(tree.mockNodeList, child0)
+    tree.get = func(ptr uint64) BNode {
+        return tree.mockNodeList[ptr]
+    }
+    tree.new = func(node BNode) uint64 {
+        nodeMapLength := len(tree.mockNodeList)
+        tree.mockNodeList = append(tree.mockNodeList, node)
+        return uint64(nodeMapLength)
+    }
+    tree.del = func(ptr uint64) {
+        tree.mockNodeList[ptr] = BNode{}
+    }
+}
+
 func TestBNodeHeader(t *testing.T) {
     testNode := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
     testNode.setHeader(BNODE_NODE, 10)

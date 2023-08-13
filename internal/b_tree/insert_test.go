@@ -72,39 +72,16 @@ func TestLeafUpdate(t *testing.T) {
 }
 
 func TestNodeInsertAndTreeInsert(t *testing.T) {
-    // root = intermediate node with 0 as the key
-    root := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
-    root.setHeader(BNODE_NODE, 1)
-    nodeAppendKV(root, 0, 1, []byte{byte(0)}, nil)
-
-    // child0 = default leaf node
-    child0 := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
-    child0.setHeader(BNODE_LEAF, 1)
-    nodeAppendKV(child0, 0, 0, []byte{byte(0)}, nil)
-
-    tree := BTree{root: 0}
-    nodeList := []BNode{}
-    nodeList = append(nodeList, root)
-    nodeList = append(nodeList, child0)
-    tree.get = func(ptr uint64) BNode {
-        return nodeList[ptr]
-    }
-    tree.new = func(node BNode) uint64 {
-        nodeMapLength := len(nodeList)
-        nodeList = append(nodeList, node)
-        return uint64(nodeMapLength)
-    }
-    tree.del = func(ptr uint64) {
-        nodeList[ptr] = BNode{}
-    }
+    tree := BTree{}
+    SetUpMockBTree(t, &tree)
+    root := tree.get(0)
     root = treeInsert(&tree, root, []byte{byte(10)}, []byte{byte(10)})
     assert.Equal(t, root.nkeys(), uint16(1))
-    child0 = tree.get(root.getPtr(0))
+    child0 := tree.get(root.getPtr(0))
     // root, deleted_child0, actual_child0
-    assert.Equal(t, len(nodeList), 3)
-    assert.Equal(t, nodeList[2].nkeys(), uint16(2))
-    assert.Equal(t, nodeList[2].getKey(1), []byte{byte(10)})
-    assert.Equal(t, nodeList[2].getVal(1), []byte{byte(10)})
+    assert.Equal(t, child0.nkeys(), uint16(2))
+    assert.Equal(t, child0.getKey(1), []byte{byte(10)})
+    assert.Equal(t, child0.getVal(1), []byte{byte(10)})
 
     // insert a big node such that it needs to split
     //         root: 0, 15
