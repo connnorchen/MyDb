@@ -128,3 +128,65 @@ func (node BNode) nbytes() uint16 {
     return node.kvPos(node.nkeys())
 }
 
+// Return true if btree successfully deleted a key
+// The btree will shrink if these two conditions satisfied:
+// 1. The root node is not a leaf.
+// 2. The root node has only one child.
+func (tree *BTree) Delete(key []byte) bool {
+    util.Assert(len(key) != 0)
+    util.Assert(len(key) <= BTREE_MAX_KEY_SIZE)
+    
+    if tree.root == 0 {
+        return false
+    }
+    updated := treeDelete(tree, tree.get(tree.root), key)
+    if len(updated.data) == 0 {
+        return false // not found
+    }
+    tree.del(tree.root)
+    
+    if updated.btype() == BNODE_NODE && updated.nkeys() == 1 {
+        tree.root = updated.getPtr(0)
+    } else {
+        tree.root = tree.new(updated)
+    }
+    return true
+}
+
+// Return true if btree successfully inserted the key, val pair
+func (tree *BTree) Insert(key []byte, val []byte) {
+    util.Assert(len(key) != 0)
+    util.Assert(len(key) <= BTREE_MAX_KEY_SIZE)
+    util.Assert(len(val) <= BTREE_MAX_VALUE_SIZE)
+    
+    if tree.root == 0 {
+        // first key ever possible
+        root := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+
+        // create a dummy node to pass LE check
+        root.setHeader(BNODE_LEAF, 2)
+        nodeAppendKV(root, 0, 0, nil, nil)
+        nodeAppendKV(root, 1, 0, key, val)
+        tree.root = tree.new(root)
+        return
+    }
+    
+    root := tree.get(tree.root)
+    tree.del(tree.root)
+
+    newRoot := treeInsert(tree, root, key, val)
+    nsplit, splited := nodeSplit3(newRoot)
+    if nsplit > 1 {
+        finalRoot := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+        finalRoot.setHeader(BNODE_NODE, nsplit)
+        for i, node := range splited[:nsplit] {
+            nodeAppendKV(
+                finalRoot, uint16(i),
+                tree.new(node), node.getKey(0), nil,
+            )
+        }
+        tree.root = tree.new(finalRoot)
+    } else {
+        tree.root = tree.new(splited[0])
+    }
+}
