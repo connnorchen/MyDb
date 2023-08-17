@@ -7,7 +7,7 @@ import (
 )
 
 func TestNodeAppendKV(t *testing.T) {
-    testNode := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    testNode := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     testNode.setHeader(BNODE_LEAF, 2)
     key := []byte{1, 2, 3}
     val := []byte{1, 2, 3, 4, 5}
@@ -35,8 +35,8 @@ func TestNodeAppendKV(t *testing.T) {
 }
 
 func TestNodeAppendRange(t *testing.T) {
-    new := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
-    old := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
+    old := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     old.setHeader(BNODE_LEAF, 10)
     new.setHeader(BNODE_LEAF, 10)
     
@@ -44,7 +44,7 @@ func TestNodeAppendRange(t *testing.T) {
         nodeAppendKV(old, i, 0, []byte{byte(i)}, []byte{byte(i)})
     }
     nodeAppendRange(new, old, 0, 0, 10)
-    assert.Equal(t, new.data, old.data)
+    assert.Equal(t, new.Data, old.Data)
 
     new.setHeader(BNODE_LEAF, 11)
     for i := uint16(0); i < uint16(11); i++ {
@@ -61,7 +61,7 @@ func TestNodeAppendRange(t *testing.T) {
 }
 
 func TestNodeLookLE(t *testing.T) {
-    new := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     new.setHeader(BNODE_LEAF, 10)
     // 0, 2, 4, 6, 8, 10, 12, 14, 16, 18
     for i := uint16(0); i < uint16(20); i += 2 {
@@ -99,7 +99,7 @@ func TestNodeLookLE(t *testing.T) {
 }
 
 func TestNodeSplit2(t *testing.T) {
-    old := BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    old := BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
     // 4000, 200
     key1 := make([]byte, 1000)
     val1 := make([]byte, 3000)
@@ -110,8 +110,8 @@ func TestNodeSplit2(t *testing.T) {
     old.setHeader(BNODE_LEAF, 2)
     nodeAppendKV(old, 0, 0, key1, val1)
     nodeAppendKV(old, 1, 0, key2, val2)
-    left := BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
-    right := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    left := BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    right := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     nodeSplit2(left, right, old)
 
     assert.Equal(t, left.nkeys(), uint16(1))
@@ -134,7 +134,7 @@ func TestNodeSplit2(t *testing.T) {
     assert.Less(t, right.nbytes(), uint16(BTREE_PAGE_SIZE))
 
     // 2000, 200, 2000
-    old = BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    old = BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
     key1 = make([]byte, 1000)
     val1 = make([]byte, 1000)
     key2 = make([]byte, 100)
@@ -143,15 +143,15 @@ func TestNodeSplit2(t *testing.T) {
     val3 := make([]byte, 1000)
     key2[0] = byte(1)
     key3[0] = byte(2)
-    left = BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
-    right = BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    left = BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    right = BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
 
     old.setHeader(BNODE_LEAF, 3)
     nodeAppendKV(old, 0, 0, key1, val1)
     nodeAppendKV(old, 1, 0, key2, val2)
     nodeAppendKV(old, 2, 0, key3, val3)
-    left = BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
-    right = BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    left = BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    right = BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     nodeSplit2(left, right, old)
 
     assert.Equal(t, left.nkeys(), uint16(1))
@@ -195,8 +195,8 @@ func TestNodeSplit2(t *testing.T) {
     nodeAppendKV(old, 2, 0, key3, val3)
     nodeAppendKV(old, 3, 0, key4, val4)
 
-    left = BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
-    right = BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    left = BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    right = BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     nodeSplit2(left, right, old)
     assert.Equal(t, left.nkeys(), uint16(2))
     assert.Equal(t, left.getKey(0), key1)
@@ -229,7 +229,7 @@ func TestNodeSplit2(t *testing.T) {
 }
 
 func TestNodeSplit3(t *testing.T) {
-    node := BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    node := BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
     node.setHeader(BNODE_LEAF, 1)
     key1 := make([]byte, 1000)
     val1 := make([]byte, 3000)
@@ -244,7 +244,7 @@ func TestNodeSplit3(t *testing.T) {
     assert.Less(t, nodes[0].nbytes(), uint16(BTREE_PAGE_SIZE))
 
     // 2000, 200, 2000
-    node = BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    node = BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
     key1 = make([]byte, 1000)
     val1 = make([]byte, 1000)
     key2 := make([]byte, 100)
@@ -289,7 +289,7 @@ func TestNodeSplit3(t *testing.T) {
     assert.Less(t, right.nbytes(), uint16(BTREE_PAGE_SIZE))
 
     // 3000, 2000, 200, 2000
-    node = BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    node = BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
     key1 = make([]byte, 1000)
     val1 = make([]byte, 2000)
     key2 = make([]byte, 1000)
@@ -356,29 +356,29 @@ func TestNodeSplit3(t *testing.T) {
 
 func TestNodeReplaceKidN(t *testing.T) {
     // 0, 2, 4, 6, 8
-    old := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    old := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     old.setHeader(BNODE_NODE, 5)
     for i := uint16(0); i < 10; i += 2 {
         nodeAppendKV(old, i/2, 0, []byte{byte(i)}, nil)
     }
 
-    new := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     new.setHeader(BNODE_NODE, 5)
-    tree := BTree{root: 0}
-    tree.new = func(node BNode) uint64 {
+    tree := BTree{Root: 0}
+    tree.New = func(node BNode) uint64 {
         return 12311144
     }
-    kid1 := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    kid1 := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     key1 := []byte{byte(1)}
     val1 := []byte{byte(1)}
     kid1.setHeader(BNODE_LEAF, 1)
     nodeAppendKV(kid1, 0, 0, key1, val1)
-    kid2 := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    kid2 := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     key2 := []byte{byte(2)}
     val2 := []byte{byte(2)}
     kid2.setHeader(BNODE_LEAF, 1)
     nodeAppendKV(kid2, 0, 0, key2, val2)
-    kid3 := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    kid3 := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     key3 := []byte{byte(3)}
     val3 := []byte{byte(3)}
     kid3.setHeader(BNODE_LEAF, 1)
@@ -420,12 +420,12 @@ func TestNodeReplaceKidN(t *testing.T) {
 
 func TestNodeReplace2Kid(t *testing.T) {
     // 0, 2, 4, 6, 8
-    old := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    old := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     old.setHeader(BNODE_NODE, 5)
     for i := uint16(0); i < 10; i += 2 {
         nodeAppendKV(old, i/2, 0, []byte{byte(i)}, nil)
     }
-    new := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     // 0, 1, 6, 8
     nodeReplace2Kid(new, old, 1, 123444, []byte{byte(1)})
     assert.Equal(t, new.nkeys(), uint16(4))

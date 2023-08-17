@@ -63,7 +63,7 @@ func nodeAppendRange(
 
     kvStart := old.kvPos(srcOld)
     kvEnd := old.kvPos(srcOld + n)
-    copy(new.data[new.kvPos(dstNew):], old.data[kvStart:kvEnd])
+    copy(new.Data[new.kvPos(dstNew):], old.Data[kvStart:kvEnd])
 }
 
 func nodeAppendKV(
@@ -76,10 +76,10 @@ func nodeAppendKV(
     keyLength := uint16(len(key))
     valLength := uint16(len(val))
     newKvPos := new.kvPos(idx)
-    binary.LittleEndian.PutUint16(new.data[newKvPos:], keyLength)
-    binary.LittleEndian.PutUint16(new.data[newKvPos+2:], valLength)
-    copy(new.data[newKvPos+4:], key)
-    copy(new.data[newKvPos+4+keyLength:], val)
+    binary.LittleEndian.PutUint16(new.Data[newKvPos:], keyLength)
+    binary.LittleEndian.PutUint16(new.Data[newKvPos+2:], valLength)
+    copy(new.Data[newKvPos+4:], key)
+    copy(new.Data[newKvPos+4+keyLength:], val)
 
     new.setOffset(idx + 1, new.getOffset(idx) + 4 + keyLength + valLength)
 }
@@ -124,6 +124,7 @@ func nodeSplit2(left BNode, right BNode, old BNode) {
 // split a node if it's too big, the results are 1~3 nodes
 func nodeSplit3(old BNode) (uint16, [3]BNode) {
     if old.nbytes() <= BTREE_PAGE_SIZE {
+        old.Data = old.Data[:BTREE_PAGE_SIZE]
         return 1, [3]BNode{old}
     }
 
@@ -131,6 +132,7 @@ func nodeSplit3(old BNode) (uint16, [3]BNode) {
     right := BNode{make([]byte, BTREE_PAGE_SIZE)}
     nodeSplit2(left, right, old)
     if left.nbytes() <= BTREE_PAGE_SIZE {
+        left.Data = left.Data[:BTREE_PAGE_SIZE]
         return 2, [3]BNode{left, right}
     }
 
@@ -151,7 +153,7 @@ func nodeReplaceKidN(
     new.setHeader(BNODE_NODE, old.nkeys() + inc - 1)
     nodeAppendRange(new, old, 0, 0, idx)
     for i, node := range kids {
-        nodeAppendKV(new, uint16(i) + idx, tree.new(node), node.getKey(0), nil)
+        nodeAppendKV(new, uint16(i) + idx, tree.New(node), node.getKey(0), nil)
     }
     nodeAppendRange(new, old, idx + inc, idx + 1, old.nkeys() - idx - 1)
 }

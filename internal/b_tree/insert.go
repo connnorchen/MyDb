@@ -28,7 +28,7 @@ func leafUpdate(new BNode, old BNode, idx uint16, key []byte, val []byte) {
 func treeInsert(tree *BTree, node BNode, key []byte, val []byte) BNode {
     // the result node, 
     // it's allowed to be greater than one page and will be splitted if so
-    new := BNode{data: make([]byte, 2 * BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, 2 * BTREE_PAGE_SIZE)}
 
     // where to insert the key
     idx := nodeLookLE(node, key)
@@ -53,10 +53,10 @@ func nodeInsert(
     tree *BTree, new BNode, node BNode, 
     idx uint16, key []byte, val []byte,
 ) {
-    // get and deallocate the kid node
+    // Get and deallocate the kid node
     kptr := node.getPtr(idx)
-    knode := tree.get(kptr)
-    tree.del(kptr)
+    knode := tree.Get(kptr)
+    tree.Del(kptr)
     // recursive insertion to the kid node
     knode = treeInsert(tree, knode, key, val)
     // split the result

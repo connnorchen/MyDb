@@ -15,8 +15,8 @@ func assertSorted(t *testing.T, node BNode) {
 }
 
 func TestLeafInsert(t *testing.T) {
-    new := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
-    old := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
+    old := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     old.setHeader(BNODE_LEAF, 10)
     // old: 0, 2, 4, 6, 8, 10, 12, 14, 16, 18
     for i := uint16(0); i < 20; i += 2{
@@ -43,8 +43,8 @@ func TestLeafInsert(t *testing.T) {
 }
 
 func TestLeafUpdate(t *testing.T) {
-    new := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
-    old := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+    new := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
+    old := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
     old.setHeader(BNODE_LEAF, 10)
     // old: 0, 2, 4, 6, 8, 10, 12, 14, 16, 18
     for i := uint16(0); i < 20; i += 2{
@@ -74,10 +74,10 @@ func TestLeafUpdate(t *testing.T) {
 func TestNodeInsertAndTreeInsert(t *testing.T) {
     tree := BTree{}
     SetUpMockBTree(t, &tree)
-    root := tree.get(0)
+    root := tree.Get(0)
     root = treeInsert(&tree, root, []byte{byte(10)}, []byte{byte(10)})
     assert.Equal(t, root.nkeys(), uint16(1))
-    child0 := tree.get(root.getPtr(0))
+    child0 := tree.Get(root.getPtr(0))
     // root, deleted_child0, actual_child0
     assert.Equal(t, child0.nkeys(), uint16(2))
     assert.Equal(t, child0.getKey(1), []byte{byte(10)})
@@ -94,8 +94,8 @@ func TestNodeInsertAndTreeInsert(t *testing.T) {
     assert.Equal(t, root.getKey(1), key)
     assert.Equal(t, root.getVal(1), []byte{})
     
-    left_child := tree.get(root.getPtr(0))
-    right_child := tree.get(root.getPtr(1))
+    left_child := tree.Get(root.getPtr(0))
+    right_child := tree.Get(root.getPtr(1))
     assert.Equal(t, left_child.nkeys(), uint16(2))
     assert.Equal(t, left_child.getKey(0), []byte{byte(0)})
     assert.Equal(t, left_child.getVal(0), []byte{})
@@ -112,7 +112,7 @@ func TestNodeInsertAndTreeInsert(t *testing.T) {
     assert.Equal(t, root.getKey(1), key)
     assert.Equal(t, root.getVal(1), []byte{})
 
-    right_child = tree.get(root.getPtr(1))
+    right_child = tree.Get(root.getPtr(1))
     assert.Equal(t, right_child.nkeys(), uint16(2))
     assert.Equal(t, right_child.getKey(1), []byte{byte(17)})
     assert.Equal(t, right_child.getVal(1), []byte{})
@@ -126,10 +126,10 @@ func TestNodeInsertAndTreeInsert(t *testing.T) {
     root = treeInsert(&tree, root, key1, val1)
 
     assert.Equal(t, root.nkeys(), uint16(4))
-    left_child = tree.get(root.getPtr(0))
-    middle_child := tree.get(root.getPtr(1))
-    right1_child := tree.get(root.getPtr(2))
-    right2_child := tree.get(root.getPtr(3))
+    left_child = tree.Get(root.getPtr(0))
+    middle_child := tree.Get(root.getPtr(1))
+    right1_child := tree.Get(root.getPtr(2))
+    right2_child := tree.Get(root.getPtr(3))
     assert.Equal(t, left_child.nkeys(), uint16(2))
     assert.Equal(t, middle_child.nkeys(), uint16(1))
     assert.Equal(t, right1_child.nkeys(), uint16(1))
