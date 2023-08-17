@@ -14,7 +14,7 @@ import (
 // | klen | vlen  |  key |  val |
 // | 2B   | 2B    | ...  |  ... |
 type BNode struct {
-    data []byte // can be dumped to disk
+    Data []byte // can be dumped to disk
 }
 
 const (
@@ -31,11 +31,11 @@ const (
 
 type BTree struct {
     // pointer (a nonzero page number)
-    root uint64
+    Root uint64
     // callbacks for managing on-disk pages
-    get func(uint64) BNode // dereference a pointer
-    new func(BNode) uint64 // allocate a new page
-    del func(uint64)       // deallocate a new page
+    Get func(uint64) BNode // dereference a pointer
+    New func(BNode) uint64 // allocate a New page
+    Del func(uint64)       // deallocate a New page
 
     mockNodeList []BNode   // for testing usage
 }
@@ -48,29 +48,29 @@ func init() {
 // decoding BNode
 // header 
 func (node BNode) btype() uint16 {
-    return binary.LittleEndian.Uint16(node.data)    
+    return binary.LittleEndian.Uint16(node.Data)    
 }
 
 func (node BNode) nkeys() uint16 {
-    return binary.LittleEndian.Uint16(node.data[2:4])
+    return binary.LittleEndian.Uint16(node.Data[2:4])
 }
 
 func (node BNode) setHeader(btype uint16, nkeys uint16) {
-    binary.LittleEndian.PutUint16(node.data, btype)
-    binary.LittleEndian.PutUint16(node.data[2:4], nkeys)
+    binary.LittleEndian.PutUint16(node.Data, btype)
+    binary.LittleEndian.PutUint16(node.Data[2:4], nkeys)
 }
 
 // pointers
 func (node BNode) getPtr(idx uint16) uint64 {
     util.Assert(idx < node.nkeys())
     index := HEADER + idx * 8
-    return binary.LittleEndian.Uint64(node.data[index:])
+    return binary.LittleEndian.Uint64(node.Data[index:])
 }
 
 func (node BNode) setPtr(idx uint16, ptr uint64) {
     util.Assert(idx < node.nkeys());
     index := HEADER + idx * 8
-    binary.LittleEndian.PutUint64(node.data[index:], ptr);
+    binary.LittleEndian.PutUint64(node.Data[index:], ptr);
 }
 
 // The offset is relative to the position of the first KV pair.
@@ -94,16 +94,16 @@ func (node BNode) getOffset(idx uint16) uint16 {
         return 0
     }
     pos := offsetPos(node, idx)
-    return binary.LittleEndian.Uint16(node.data[pos:])
+    return binary.LittleEndian.Uint16(node.Data[pos:])
 }
 
 func (node BNode) setOffset(idx uint16, offset uint16) {
     pos := offsetPos(node, idx)
-    binary.LittleEndian.PutUint16(node.data[pos:], offset)
+    binary.LittleEndian.PutUint16(node.Data[pos:], offset)
 }
 
 // key-values
-// kvPos(nkeys) returns the size of data
+// kvPos(nkeys) returns the size of Data
 func (node BNode) kvPos(idx uint16) uint16 {
     util.Assert(idx <= node.nkeys())
     return HEADER + node.nkeys() * 8 + node.nkeys() * 2 + node.getOffset(idx)
@@ -112,16 +112,16 @@ func (node BNode) kvPos(idx uint16) uint16 {
 func (node BNode) getKey(idx uint16) []byte {
     util.Assert(idx < node.nkeys())
     kvPos := node.kvPos(idx)
-    keyLength := binary.LittleEndian.Uint16(node.data[kvPos:])
-    return node.data[kvPos+4:][:keyLength]
+    keyLength := binary.LittleEndian.Uint16(node.Data[kvPos:])
+    return node.Data[kvPos+4:][:keyLength]
 }
 
 func (node BNode) getVal(idx uint16) []byte {
     util.Assert(idx < node.nkeys())
     kvPos := node.kvPos(idx)
-    keyLength := binary.LittleEndian.Uint16(node.data[kvPos:])
-    valLength := binary.LittleEndian.Uint16(node.data[kvPos + 2:])
-    return node.data[kvPos+4+keyLength:][:valLength]
+    keyLength := binary.LittleEndian.Uint16(node.Data[kvPos:])
+    valLength := binary.LittleEndian.Uint16(node.Data[kvPos + 2:])
+    return node.Data[kvPos+4+keyLength:][:valLength]
 }
 
 func (node BNode) nbytes() uint16 {
@@ -130,25 +130,25 @@ func (node BNode) nbytes() uint16 {
 
 // Return true if btree successfully deleted a key
 // The btree will shrink if these two conditions satisfied:
-// 1. The root node is not a leaf.
-// 2. The root node has only one child.
-func (tree *BTree) Delete(key []byte) bool {
+// 1. The Root node is not a leaf.
+// 2. The Root node has only one child.
+func (tree *BTree) DeleteKey(key []byte) bool {
     util.Assert(len(key) != 0)
     util.Assert(len(key) <= BTREE_MAX_KEY_SIZE)
     
-    if tree.root == 0 {
+    if tree.Root == 0 {
         return false
     }
-    updated := treeDelete(tree, tree.get(tree.root), key)
-    if len(updated.data) == 0 {
+    updated := treeDelete(tree, tree.Get(tree.Root), key)
+    if len(updated.Data) == 0 {
         return false // not found
     }
-    tree.del(tree.root)
+    tree.Del(tree.Root)
     
     if updated.btype() == BNODE_NODE && updated.nkeys() == 1 {
-        tree.root = updated.getPtr(0)
+        tree.Root = updated.getPtr(0)
     } else {
-        tree.root = tree.new(updated)
+        tree.Root = tree.New(updated)
     }
     return true
 }
@@ -159,34 +159,44 @@ func (tree *BTree) Insert(key []byte, val []byte) {
     util.Assert(len(key) <= BTREE_MAX_KEY_SIZE)
     util.Assert(len(val) <= BTREE_MAX_VALUE_SIZE)
     
-    if tree.root == 0 {
+    if tree.Root == 0 {
         // first key ever possible
-        root := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+        Root := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
 
         // create a dummy node to pass LE check
-        root.setHeader(BNODE_LEAF, 2)
-        nodeAppendKV(root, 0, 0, nil, nil)
-        nodeAppendKV(root, 1, 0, key, val)
-        tree.root = tree.new(root)
+        Root.setHeader(BNODE_LEAF, 2)
+        nodeAppendKV(Root, 0, 0, nil, nil)
+        nodeAppendKV(Root, 1, 0, key, val)
+        tree.Root = tree.New(Root)
         return
     }
     
-    root := tree.get(tree.root)
-    tree.del(tree.root)
+    Root := tree.Get(tree.Root)
+    tree.Del(tree.Root)
 
-    newRoot := treeInsert(tree, root, key, val)
+    newRoot := treeInsert(tree, Root, key, val)
     nsplit, splited := nodeSplit3(newRoot)
     if nsplit > 1 {
-        finalRoot := BNode{data: make([]byte, BTREE_PAGE_SIZE)}
+        finalRoot := BNode{Data: make([]byte, BTREE_PAGE_SIZE)}
         finalRoot.setHeader(BNODE_NODE, nsplit)
         for i, node := range splited[:nsplit] {
             nodeAppendKV(
                 finalRoot, uint16(i),
-                tree.new(node), node.getKey(0), nil,
+                tree.New(node), node.getKey(0), nil,
             )
         }
-        tree.root = tree.new(finalRoot)
+        tree.Root = tree.New(finalRoot)
     } else {
-        tree.root = tree.new(splited[0])
+        tree.Root = tree.New(splited[0])
     }
+}
+
+func (tree *BTree) GetKey(key []byte) ([]byte, bool) {
+    util.Assert(len(key) != 0)
+    util.Assert(len(key) <= BTREE_MAX_KEY_SIZE)
+    if tree.Root == 0 {
+        return []byte(nil), false
+    }
+    root := tree.Get(tree.Root)
+    return treeGet(tree, root, key)
 }
